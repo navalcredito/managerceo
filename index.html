@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIB Crédito — Sistema de Gestão</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#0b0d11;--s1:#12151c;--s2:#181c25;--s3:#1f2430;--bd:#2a2f3d;--tx:#e4e6ed;--tm:#7c8399;--th:#4a5064;--ac:#3b82f6;--acg:rgba(59,130,246,.12);--gn:#22c55e;--gng:rgba(34,197,94,.12);--rd:#ef4444;--rdg:rgba(239,68,68,.12);--yl:#eab308;--ylg:rgba(234,179,8,.12);--or:#f97316;--pp:#a855f7;--ppg:rgba(168,85,247,.12);--tl:#14b8a6;--tlg:rgba(20,184,166,.12)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);overflow-x:hidden}
+.app{display:flex;min-height:100vh}
+.side{width:260px;background:var(--s1);border-right:1px solid var(--bd);padding:20px 16px;flex-shrink:0;overflow-y:auto;position:fixed;height:100vh;z-index:5}
+.side-logo h1{font-size:18px;font-weight:700;margin-bottom:2px}
+.side-logo p{font-size:11px;color:var(--tm)}
+.ns{font-size:10px;font-weight:700;color:var(--th);text-transform:uppercase;letter-spacing:1.5px;margin:20px 0 8px;padding:0 12px}
+.ni{padding:9px 12px;font-size:13px;color:var(--tm);border-radius:8px;cursor:pointer;margin-bottom:2px;transition:.15s;display:flex;align-items:center;gap:8px}
+.ni:hover{color:var(--tx);background:var(--s2)}
+.ni.active{color:var(--ac);background:var(--acg);font-weight:500}
+.main{flex:1;margin-left:260px;min-height:100vh}
+.hd{padding:16px 28px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:4}
+.hd h2{font-size:16px;font-weight:600}
+.ct{padding:24px 28px}
+.page{display:none}
+.page.active{display:block}
+.sc{font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:20px;margin-bottom:16px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--s1);border:1px solid var(--bd);border-radius:10px;padding:16px}
+.kpi .lb{font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.5px}
+.kpi .vl{font-size:24px;font-weight:700;font-family:'Space Mono',monospace;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;color:var(--tm);font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--bd)}
+td{padding:10px 12px;border-bottom:1px solid var(--bd)}
+tr:hover{background:var(--s2)}
+.badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;text-transform:uppercase}
+.bg-gn{background:var(--gng);color:var(--gn)}
+.bg-rd{background:var(--rdg);color:var(--rd)}
+.bg-yl{background:var(--ylg);color:var(--yl)}
+.bg-ac{background:var(--acg);color:var(--ac)}
+.bg-pp{background:var(--ppg);color:var(--pp)}
+.btn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--s2);color:var(--tx);font-family:inherit;transition:.15s}
+.btn:hover{border-color:var(--ac);color:var(--ac)}
+.btn-p{background:var(--acg);border-color:rgba(59,130,246,.3);color:var(--ac)}
+.btn-p:hover{background:rgba(59,130,246,.2)}
+.btn-g{background:var(--gng);border-color:rgba(34,197,94,.3);color:var(--gn)}
+.btn-d{background:var(--rdg);border-color:rgba(239,68,68,.3);color:var(--rd)}
+.btn-sm{padding:5px 10px;font-size:11px}
+input,select,textarea{width:100%;padding:9px 12px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;color:var(--tx);font-size:13px;font-family:inherit;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--ac)}
+select{cursor:pointer}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:11px;color:var(--tm);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20;display:flex;align-items:center;justify-content:center;display:none}
+.modal-bg.open{display:flex}
+.modal{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:24px;width:90%;max-width:520px;max-height:85vh;overflow-y:auto}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:16px}
+.empty{text-align:center;padding:40px;color:var(--th);font-size:13px}
+.mb{display:none;background:none;border:1px solid var(--bd);border-radius:8px;color:var(--tx);padding:6px 12px;font-size:18px;cursor:pointer;font-family:inherit;line-height:1}
+.so{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.loading{text-align:center;padding:30px;color:var(--th)}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--gn);color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;z-index:30;display:none;animation:slideUp .3s}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+@media(max-width:900px){.side{display:none}.side.open{display:block;width:280px;position:fixed;top:0;left:0;height:100vh}.so.open{display:block}.main{margin-left:0}.mb{display:block}.form-row{grid-template-columns:1fr}.kpi-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="so" id="so" onclick="cm()"></div>
+<nav class="side" id="sv">
+<div class="side-logo"><h1>DIB Crédito</h1><p>Sistema de Gestão</p></div>
+<div class="ns">Principal</div>
+<div class="ni active" data-p="dashboard">🧭 Dashboard</div>
+<div class="ni" data-p="finance">💰 Financeiro</div>
+<div class="ni" data-p="people">👥 Funcionários</div>
+<div class="ns">Operacional</div>
+<div class="ni" data-p="chips">📱 Chips & Recargas</div>
+<div class="ni" data-p="assets">💻 Ativos</div>
+<div class="ni" data-p="inventory">📦 Estoque</div>
+<div class="ns">Documentos</div>
+<div class="ni" data-p="docs">📄 Contratos & NFs</div>
+<div class="ni" data-p="credentials">🔐 Credenciais</div>
+<div class="ni" data-p="notifications">⏰ Lembretes</div>
+</nav>
+<div class="main">
+<div class="hd"><div style="display:flex;align-items:center;gap:12px"><button class="mb" onclick="om()">☰</button><h2 id="pt">Dashboard</h2></div><span class="badge bg-gn" id="conn-status">Conectado</span></div>
+<div class="ct">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+<div class="kpi-grid" id="dash-kpis"></div>
+<div class="card">
+<div class="sc">⏰ Lembretes de Hoje</div>
+<div id="dash-notifs"><div class="loading">Carregando...</div></div>
+</div>
+<div class="card">
+<div class="sc">📱 Chips com Recarga Próxima (7 dias)</div>
+<div id="dash-chips"><div class="loading">Carregando...</div></div>
+</div>
+</div>
+
+<!-- FINANCEIRO -->
+<div class="page" id="page-finance">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+<div style="display:flex;align-items:center;gap:8px">
+<button class="btn btn-sm" onclick="changeMonth(-1)">◀</button>
+<span id="fin-month" style="font-weight:700;font-size:15px"></span>
+<button class="btn btn-sm" onclick="changeMonth(1)">▶</button>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-p" onclick="openModal('modal-transaction')">+ Lançamento</button>
+<button class="btn" onclick="openModal('modal-category')">+ Categoria</button>
+</div>
+</div>
+<div class="kpi-grid" id="fin-kpis"></div>
+<div class="card">
+<div class="sc">Lançamentos do Mês</div>
+<div id="fin-table"><div class="loading">Carregando...</div></div>
+</div>
+</div>
+
+<!-- FUNCIONÁRIOS -->
+<div class="page" id="page-people">
+<div style="display:flex;justify-content:space-between;margin-bottom:16px"><div class="sc" style="margin:0">👥 Equipe</div><button class="btn btn-p" onclick="openModal('modal-employee')">+ Funcionário</button></div>
+<div class="card" style="padding:0;overflow:hidden"><div id="people-table"><div class="loading">Carregando...</div></div></div>
+</div>
+
+<!-- CHIPS -->
+<div class="page" id="page-chips">
+<div style="display:flex;justify-content:space-between;margin-bottom:16px"><div class="sc" style="margin:0">📱 Chips & Recargas</div><button class="btn btn-p" onclick="openModal('modal-chip')">+ Chip</button></div>
+<div class="card" style="padding:0;overflow:hidden"><div id="chips-table"><div class="loading">Carregando...</div></div></div>
+</div>
+
+<!-- ATIVOS -->
+<div class="page" id="page-assets">
+<div style="display:flex;justify-content:space-between;margin-bottom:16px"><div class="sc" style="margin:0">💻 Ativos</div><button class="btn btn-p" onclick="openModal('modal-asset')">+ Ativo</button></div>
+<div class="card" style="padding:0;overflow:hidden"><div id="assets-table"><div class="loading">Carregando...</div></div></div>
+</div>
+
+<!-- ESTOQUE -->
+<div class="page" id="page-inventory">
+<div style="display:flex;justify-content:space-between;margin-bottom:16px"><div class="sc" style="margin:0">📦 Estoque</div><button class="btn btn-p" onclick="openModal('modal-stock')">+ Item</button></div>
+<div class="card" style="padding:0;overflow:hidden"><div id="inventory-table"><div class="loading">Carregando...</div></div></div>
+</div>
+
+<!-- DOCS -->
+<div class="page" id="page-docs">
+<div style="display:flex;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px"><div class="sc" style="margin:0">📄 Contratos & NFs</div>
+<div style="display:flex;gap:8px"><button class="btn btn-p" onclick="openModal('modal-contract')">+ Contrato</button><button class="btn" onclick="openModal('modal-invoice')">+ Nota Fiscal</button></div></div>
+<div class="card"><div class="sc">Contratos</div><div id="contracts-table"><div class="loading">Carregando...</div></div></div>
+<div class="card"><div class="sc">Notas Fiscais</div><div id="invoices-table"><div class="loading">Carregando...</div></div></div>
+</div>
+
+<!-- CREDENCIAIS -->
+<div class="page" id="page-credentials">
+<div style="display:flex;justify-content:space-between;margin-bottom:16px"><div class="sc" style="margin:0">🔐 Credenciais</div><button class="btn btn-p" onclick="openModal('modal-credential')">+ Credencial</button></div>
+<div class="card" style="padding:0;overflow:hidden"><div id="credentials-table"><div class="loading">Carregando...</div></div></div>
+</div>
+
+<!-- NOTIFICAÇÕES -->
+<div class="page" id="page-notifications">
+<div style="display:flex;justify-content:space-between;margin-bottom:16px"><div class="sc" style="margin:0">⏰ Lembretes</div><button class="btn btn-p" onclick="openModal('modal-notification')">+ Lembrete</button></div>
+<div class="card" style="padding:0;overflow:hidden"><div id="notifications-table"><div class="loading">Carregando...</div></div></div>
+</div>
+
+</div></div></div>
+
+<!-- MODALS -->
+<div class="modal-bg" id="modal-transaction"><div class="modal"><h3>Novo Lançamento</h3>
+<div class="form-row"><div class="form-group"><label>Título</label><input id="ft-title"></div><div class="form-group"><label>Valor (R$)</label><input id="ft-amount" type="number" step="0.01"></div></div>
+<div class="form-row"><div class="form-group"><label>Tipo</label><select id="ft-kind"><option value="income">Entrada</option><option value="expense">Saída</option></select></div><div class="form-group"><label>Categoria</label><select id="ft-cat"></select></div></div>
+<div class="form-row"><div class="form-group"><label>Mês Ref. (YYYY-MM)</label><input id="ft-month" type="month"></div><div class="form-group"><label>Data Pgto</label><input id="ft-paid" type="date"></div></div>
+<div class="form-group"><label>Obs</label><textarea id="ft-notes" rows="2"></textarea></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="closeModals()">Cancelar</button><button class="btn btn-g" onclick="saveTransaction()">Salvar</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-category"><div class="modal"><h3>Nova Categoria</h3>
+<div class="form-group"><label>Nome</label><input id="fc-name"></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="closeModals()">Cancelar</button><button class="btn btn-g" onclick="saveCategory()">Salvar</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-employee"><div class="modal"><h3>Novo Funcionário</h3>
+<div class="form-row"><div class="form-group"><label>Nome Completo</label><input id="fe-name"></div><div class="form-group"><label>Cargo</label><input id="fe-role"></div></div>
+<div class="form-row"><div class="form-group"><label>Contrato</label><select id="fe-contract"><option value="pj">PJ</option><option value="clt">CLT</option><option value="intern">Estágio</option><option value="other">Outro</option></select></div><div class="form-group"><label>Custo Mensal (R$)</label><input id="fe-cost" type="number" step="0.01"></div></div>
+<div class="form-row"><div class="form-group"><label>Início</label><input id="fe-start" type="date"></div><div class="form-group"><label>Status</label><select id="fe-status"><option value="active">Ativo</option><option value="inactive">Inativo</option></select></div></div>
+<div class="form-group"><label>Obs</label><textarea id="fe-notes" rows="2"></textarea></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="closeModals()">Cancelar</button><button class="btn btn-g" onclick="saveEmployee()">Salvar</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-chip"><div class="modal"><h3>Novo Chip</h3>
+<div class="form-row"><div class="form-group"><label>Nome da Linha</label><input id="fch-name"></div><div class="form-group"><label>Número</label><input id="fch-number"></div></div>
+<div class="form-row"><div class="form-group"><label>Operadora</label><input id="fch-carrier"></div><div class="form-group"><label>ICCID</label><input id="fch-iccid"></div></div>
+<div class="form-row"><div class="form-group"><label>Plano</label><input id="fch-plan"></div><div class="form-group"><label>Recarga a cada (dias)</label><input id="fch-days" type="number" value="30"></div></div>
+<div class="form-group"><label>Última Recarga</label><input id="fch-last" type="date"></div>
+<div class="form-group"><label>Obs</label><textarea id="fch-notes" rows="2"></textarea></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="closeModals()">Cancelar</button><button class="btn btn-g" onclick="saveChip()">Salvar</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-asset"><div class="modal"><h3>Novo Ativo</h3>
+<div class="form-row"><div class="form-group"><label>Nome</label><input id="fa-name"></div><div class="form-group"><label>Tipo</label><select id="fa-type"><option value="notebook">Notebook</option><option value="phone">Celular</option><option value="other">Outro</option></select></div></div>
+<div class="form-row"><div class="form-group"><label>Marca/Modelo</label><input id="fa-brand"></div><div class="form-group"><label>Nº de Série</label><input id="fa-serial"></div></div>
+<div class="form-group"><label>Obs</label><textarea id="fa-notes" rows="2"></textarea></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="closeModals()">Cancelar</button><button class="btn btn-g" onclick="saveAsset()">Salvar</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-stock"><div class="modal"><h3>Novo Item de Estoque</h3>
+<div class="form-row"><div class="form-group"><label>Nome</label><input id="fs-name"></div><div class="form-group"><label>Unidade</label><input id="fs-unit" value="un"></div></div>
+<div class="form-row"><div class="form-group"><label>Qtd Atual</label><input id="fs-qty" type="number" value="0"></div><div class="form-group"><label>Qtd Mínima</label><input id="fs-min" type="number" value="0"></div></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="closeModals()">Cancelar</button><button class="btn btn-g" onclick="saveStock()">Salvar</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-contract"><div class="modal"><h3>Novo Contrato</h3>
+<div class="form-row"><div class="form-group"><label>Título</label><input id="fco-title"></div><div class="form-group"><label>Contraparte</label><input id="fco-party"></div></div>
+<div class="form-row"><div class="form-group"><label>Assinado em</label><input id="fco-signed" type="date"></div><div class="form-group"><label>Valor (R$)</label><input id="fco-value" type="number" step="0.01"></div></div>
+<div class="form-row"><div class="form-group"><label>Início</label><input id="fco-start" type="date"></div><div class="form-group"><label>Fim</label><input id="fco-end" type="date"></div></div>
+<div class="form-group"><label>Obs</label><textarea id="fco-notes" rows="2"></textarea></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="closeModals()">Cancelar</button><button class="btn btn-g" onclick="saveContract()">Salvar</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-invoice"><div class="modal"><h3>Nova Nota Fiscal</h3>
+<div class="form-row"><div class="form-group"><label>Número</label><input id="fi-num"></div><div class="form-group"><label>Série</label><input id="fi-series"></div></div>
+<div class="form-row"><div class="form-group"><label>Emitente</label><input id="fi-issuer"></div><div class="form-group"><label>Destinatário</label><input id="fi-receiver"></div></div>
+<div class="form-row"><div class="form-group"><label>Data Emissão</label><input id="fi-date" type="date"></div><div class="form-group"><label>Valor Total (R$)</label><input id="fi-value" type="number" step="0.01"></div></div>
+<div class="form-group"><label>Obs</label><textarea id="fi-notes" rows="2"></textarea></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="closeModals()">Cancelar</button><button class="btn btn-g" onclick="saveInvoice()">Salvar</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-credential"><div class="modal"><h3>Nova Credencial</h3>
+<div class="form-row"><div class="form-group"><label>Nome (Ex: Google Ads)</label><input id="fcr-name"></div><div class="form-group"><label>Usuário/Login</label><input id="fcr-user"></div></div>
+<div class="form-row"><div class="form-group"><label>Senha</label><input id="fcr-secret" type="password"></div><div class="form-group"><label>URL</label><input id="fcr-url"></div></div>
+<div class="form-row"><div class="form-group"><label>Tags (vírgula)</label><input id="fcr-tags"></div><div class="form-group"></div></div>
+<div class="form-group"><label>Obs</label><textarea id="fcr-notes" rows="2"></textarea></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="closeModals()">Cancelar</button><button class="btn btn-g" onclick="saveCredential()">Salvar</button></div>
+</div></div>
+
+<div class="modal-bg" id="modal-notification"><div class="modal"><h3>Novo Lembrete</h3>
+<div class="form-row"><div class="form-group"><label>Título</label><input id="fn-title"></div><div class="form-group"><label>Data</label><input id="fn-date" type="date"></div></div>
+<div class="form-row"><div class="form-group"><label>Severidade</label><select id="fn-sev"><option value="info">Info</option><option value="warn">Alerta</option><option value="urgent">Urgente</option></select></div><div class="form-group"></div></div>
+<div class="form-group"><label>Mensagem</label><textarea id="fn-msg" rows="2"></textarea></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" onclick="closeModals()">Cancelar</button><button class="btn btn-g" onclick="saveNotification()">Salvar</button></div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var SB_URL='https://yobdzkqmqypywbaotmci.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlvYmR6a3FtcXlweXdiYW90bWNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MDU4NDAsImV4cCI6MjA5MDQ4MTg0MH0.Qix0qfhVsZgTj86ePQ89pj2P_maP2CtC0HQMTyF6XcQ';
+var sb=supabase.createClient(SB_URL,SB_KEY);
+var curMonth=new Date();curMonth.setDate(1);
+
+// NAV
+function om(){document.getElementById('sv').classList.add('open');document.getElementById('so').classList.add('open')}
+function cm(){document.getElementById('sv').classList.remove('open');document.getElementById('so').classList.remove('open')}
+document.querySelectorAll('.ni').forEach(function(i){i.addEventListener('click',function(){
+  document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('active')});
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});
+  i.classList.add('active');
+  var pg=document.getElementById('page-'+i.dataset.p);
+  if(pg)pg.classList.add('active');
+  document.getElementById('pt').textContent=i.textContent.trim();
+  cm();window.scrollTo(0,0);
+  loadPage(i.dataset.p);
+})});
+
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModals(){document.querySelectorAll('.modal-bg').forEach(function(m){m.classList.remove('open')})}
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(function(){t.style.display='none'},2500)}
+function fmt(v){return parseFloat(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}
+function fmtDate(d){if(!d)return '—';var p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0]}
+function monthStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
+function monthLabel(d){var m=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];return m[d.getMonth()]+' '+d.getFullYear()}
+
+// LOAD PAGES
+async function loadPage(p){
+  if(p==='dashboard')loadDashboard();
+  if(p==='finance')loadFinance();
+  if(p==='people')loadPeople();
+  if(p==='chips')loadChips();
+  if(p==='assets')loadAssets();
+  if(p==='inventory')loadInventory();
+  if(p==='docs')loadDocs();
+  if(p==='credentials')loadCredentials();
+  if(p==='notifications')loadNotifications();
+}
+
+// DASHBOARD
+async function loadDashboard(){
+  var today=new Date().toISOString().split('T')[0];
+  var month=monthStr(new Date())+'-01';
+  var [notifs,chips,income,expense,emps]=await Promise.all([
+    sb.from('notifications').select('*').eq('due_date',today).eq('is_done',false).order('created_at',{ascending:false}).limit(10),
+    sb.from('mobile_lines').select('*').eq('is_active',true),
+    sb.from('finance_transactions').select('amount').eq('kind','income').eq('reference_month',month),
+    sb.from('finance_transactions').select('amount').eq('kind','expense').eq('reference_month',month),
+    sb.from('employees').select('id').eq('status','active')
+  ]);
+  var inc=0;if(income.data)income.data.forEach(function(r){inc+=parseFloat(r.amount)});
+  var exp=0;if(expense.data)expense.data.forEach(function(r){exp+=parseFloat(r.amount)});
+  document.getElementById('dash-kpis').innerHTML=
+    '<div class="kpi"><div class="lb">Receita do Mês</div><div class="vl" style="color:var(--gn)">R$ '+fmt(inc)+'</div></div>'+
+    '<div class="kpi"><div class="lb">Despesa do Mês</div><div class="vl" style="color:var(--rd)">R$ '+fmt(exp)+'</div></div>'+
+    '<div class="kpi"><div class="lb">Lucro</div><div class="vl" style="color:'+(inc-exp>=0?'var(--gn)':'var(--rd)')+'">R$ '+fmt(inc-exp)+'</div></div>'+
+    '<div class="kpi"><div class="lb">Funcionários Ativos</div><div class="vl">'+((emps.data||[]).length)+'</div></div>';
+  // Notifs
+  var nn=notifs.data||[];
+  document.getElementById('dash-notifs').innerHTML=nn.length?nn.map(function(n){return '<div style="padding:10px 0;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center"><div><strong>'+n.title+'</strong><div style="font-size:12px;color:var(--tm)">'+n.message+'</div></div><span class="badge bg-'+(n.severity==='urgent'?'rd':n.severity==='warn'?'yl':'ac')+'">'+n.severity+'</span></div>'}).join(''):'<div class="empty">Nenhum lembrete pra hoje.</div>';
+  // Chips
+  var cc=chips.data||[];var upcoming=[];
+  var td=new Date();
+  cc.forEach(function(c){if(c.last_recharge_date){var nr=new Date(c.last_recharge_date);nr.setDate(nr.getDate()+c.recharge_every_days);var diff=Math.ceil((nr-td)/(1000*60*60*24));if(diff<=7)upcoming.push({name:c.line_name,number:c.phone_number,next:nr.toISOString().split('T')[0],diff:diff})}});
+  upcoming.sort(function(a,b){return a.diff-b.diff});
+  document.getElementById('dash-chips').innerHTML=upcoming.length?'<table><thead><tr><th>Chip</th><th>Número</th><th>Próxima Recarga</th><th>Dias</th></tr></thead><tbody>'+upcoming.map(function(u){return '<tr><td><strong>'+u.name+'</strong></td><td style="color:var(--tm)">'+u.number+'</td><td>'+fmtDate(u.next)+'</td><td><span class="badge '+(u.diff<=0?'bg-rd':u.diff<=2?'bg-yl':'bg-ac')+'">'+u.diff+'d</span></td></tr>'}).join('')+'</tbody></table>':'<div class="empty">Nenhuma recarga nos próximos 7 dias.</div>';
+}
+
+// FINANCE
+async function loadFinance(){
+  var m=monthStr(curMonth)+'-01';
+  document.getElementById('fin-month').textContent=monthLabel(curMonth);
+  var {data}=await sb.from('finance_transactions').select('*,finance_categories(name)').eq('reference_month',m).order('created_at',{ascending:false});
+  var rows=data||[];
+  var inc=0,exp=0;rows.forEach(function(r){if(r.kind==='income')inc+=parseFloat(r.amount);else exp+=parseFloat(r.amount)});
+  document.getElementById('fin-kpis').innerHTML=
+    '<div class="kpi"><div class="lb">Entradas</div><div class="vl" style="color:var(--gn)">R$ '+fmt(inc)+'</div></div>'+
+    '<div class="kpi"><div class="lb">Saídas</div><div class="vl" style="color:var(--rd)">R$ '+fmt(exp)+'</div></div>'+
+    '<div class="kpi"><div class="lb">Resultado</div><div class="vl" style="color:'+(inc-exp>=0?'var(--gn)':'var(--rd)')+'">R$ '+fmt(inc-exp)+'</div></div>';
+  document.getElementById('fin-table').innerHTML=rows.length?'<table><thead><tr><th>Título</th><th>Tipo</th><th>Categoria</th><th>Valor</th><th>Pgto</th><th></th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td><strong>'+r.title+'</strong></td><td><span class="badge '+(r.kind==='income'?'bg-gn':'bg-rd')+'">'+(r.kind==='income'?'Entrada':'Saída')+'</span></td><td style="color:var(--tm)">'+(r.finance_categories?r.finance_categories.name:'—')+'</td><td style="font-family:Space Mono,monospace;font-size:12px">R$ '+fmt(r.amount)+'</td><td style="color:var(--tm)">'+fmtDate(r.paid_at)+'</td><td><button class="btn btn-sm btn-d" onclick="delRow(\'finance_transactions\','+r.id+',\'finance\')">×</button></td></tr>'}).join('')+'</tbody></table>':'<div class="empty">Nenhum lançamento neste mês.</div>';
+  await loadCategorySelect();
+}
+function changeMonth(dir){curMonth.setMonth(curMonth.getMonth()+dir);loadFinance()}
+async function loadCategorySelect(){
+  var {data}=await sb.from('finance_categories').select('*').order('name');
+  var sel=document.getElementById('ft-cat');
+  sel.innerHTML='<option value="">—</option>'+(data||[]).map(function(c){return '<option value="'+c.id+'">'+c.name+'</option>'}).join('');
+}
+
+// PEOPLE
+async function loadPeople(){
+  var {data}=await sb.from('employees').select('*').order('status').order('full_name');
+  var rows=data||[];
+  document.getElementById('people-table').innerHTML=rows.length?'<table><thead><tr><th>Nome</th><th>Cargo</th><th>Contrato</th><th>Custo</th><th>Status</th><th></th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td><strong>'+r.full_name+'</strong></td><td style="color:var(--tm)">'+r.role+'</td><td><span class="badge bg-pp">'+r.contract_type.toUpperCase()+'</span></td><td style="font-family:Space Mono,monospace;font-size:12px">R$ '+fmt(r.monthly_cost)+'</td><td><span class="badge '+(r.status==='active'?'bg-gn':'bg-rd')+'">'+(r.status==='active'?'Ativo':'Inativo')+'</span></td><td><button class="btn btn-sm btn-d" onclick="delRow(\'employees\','+r.id+',\'people\')">×</button></td></tr>'}).join('')+'</tbody></table>':'<div class="empty">Nenhum funcionário cadastrado.</div>';
+}
+
+// CHIPS
+async function loadChips(){
+  var {data}=await sb.from('mobile_lines').select('*').order('is_active',{ascending:false}).order('line_name');
+  var rows=data||[];var td=new Date();
+  document.getElementById('chips-table').innerHTML=rows.length?'<table><thead><tr><th>Chip</th><th>Número</th><th>Operadora</th><th>Última Recarga</th><th>Próxima</th><th>Status</th><th></th></tr></thead><tbody>'+rows.map(function(r){
+    var next='—';var cls='';
+    if(r.last_recharge_date){var nr=new Date(r.last_recharge_date);nr.setDate(nr.getDate()+r.recharge_every_days);next=fmtDate(nr.toISOString().split('T')[0]);var diff=Math.ceil((nr-td)/(1000*60*60*24));cls=diff<=0?'color:var(--rd)':diff<=3?'color:var(--yl)':''}
+    return '<tr><td><strong>'+r.line_name+'</strong></td><td style="color:var(--tm)">'+(r.phone_number||'—')+'</td><td style="color:var(--tm)">'+(r.carrier||'—')+'</td><td>'+fmtDate(r.last_recharge_date)+'</td><td style="font-weight:700;'+cls+'">'+next+'</td><td><span class="badge '+(r.is_active?'bg-gn':'bg-rd')+'">'+(r.is_active?'Ativo':'Inativo')+'</span></td><td><button class="btn btn-sm" onclick="rechargeChip('+r.id+')">Recarregar</button> <button class="btn btn-sm btn-d" onclick="delRow(\'mobile_lines\','+r.id+',\'chips\')">×</button></td></tr>'}).join('')+'</tbody></table>':'<div class="empty">Nenhum chip cadastrado.</div>';
+}
+async function rechargeChip(id){
+  var today=new Date().toISOString().split('T')[0];
+  await sb.from('mobile_lines').update({last_recharge_date:today}).eq('id',id);
+  toast('Recarga registrada!');loadChips();if(document.getElementById('page-dashboard').classList.contains('active'))loadDashboard();
+}
+
+// ASSETS
+async function loadAssets(){
+  var {data}=await sb.from('assets').select('*').order('is_active',{ascending:false}).order('name');
+  var rows=data||[];
+  document.getElementById('assets-table').innerHTML=rows.length?'<table><thead><tr><th>Nome</th><th>Tipo</th><th>Marca/Modelo</th><th>Nº Série</th><th>Status</th><th></th></tr></thead><tbody>'+rows.map(function(r){var types={notebook:'Notebook',phone:'Celular',other:'Outro'};return '<tr><td><strong>'+r.name+'</strong></td><td style="color:var(--tm)">'+(types[r.asset_type]||r.asset_type)+'</td><td style="color:var(--tm)">'+r.brand_model+'</td><td style="font-family:Space Mono,monospace;font-size:11px">'+r.serial_number+'</td><td><span class="badge '+(r.is_active?'bg-gn':'bg-rd')+'">'+(r.is_active?'Ativo':'Inativo')+'</span></td><td><button class="btn btn-sm btn-d" onclick="delRow(\'assets\','+r.id+',\'assets\')">×</button></td></tr>'}).join('')+'</tbody></table>':'<div class="empty">Nenhum ativo cadastrado.</div>';
+}
+
+// INVENTORY
+async function loadInventory(){
+  var {data}=await sb.from('stock_items').select('*').order('name');
+  var rows=data||[];
+  document.getElementById('inventory-table').innerHTML=rows.length?'<table><thead><tr><th>Item</th><th>Unid.</th><th>Qtd Atual</th><th>Mínimo</th><th>Status</th><th></th></tr></thead><tbody>'+rows.map(function(r){var low=r.min_qty&&r.current_qty<=r.min_qty;return '<tr><td><strong>'+r.name+'</strong></td><td style="color:var(--tm)">'+r.unit+'</td><td style="font-family:Space Mono,monospace">'+r.current_qty+'</td><td style="color:var(--tm)">'+r.min_qty+'</td><td>'+(low?'<span class="badge bg-rd">Baixo</span>':'<span class="badge bg-gn">OK</span>')+'</td><td><button class="btn btn-sm btn-d" onclick="delRow(\'stock_items\','+r.id+',\'inventory\')">×</button></td></tr>'}).join('')+'</tbody></table>':'<div class="empty">Nenhum item cadastrado.</div>';
+}
+
+// DOCS
+async function loadDocs(){
+  var [c,i]=await Promise.all([
+    sb.from('contracts').select('*').order('signed_at',{ascending:false}).limit(20),
+    sb.from('invoices').select('*').order('issued_at',{ascending:false}).limit(20)
+  ]);
+  var cc=c.data||[];var ii=i.data||[];
+  document.getElementById('contracts-table').innerHTML=cc.length?'<table><thead><tr><th>Título</th><th>Contraparte</th><th>Valor</th><th>Assinado</th><th>Vigência</th><th></th></tr></thead><tbody>'+cc.map(function(r){return '<tr><td><strong>'+r.title+'</strong></td><td style="color:var(--tm)">'+r.counterparty+'</td><td style="font-family:Space Mono,monospace;font-size:12px">'+(r.value?'R$ '+fmt(r.value):'—')+'</td><td>'+fmtDate(r.signed_at)+'</td><td style="color:var(--tm)">'+fmtDate(r.starts_at)+' → '+fmtDate(r.ends_at)+'</td><td><button class="btn btn-sm btn-d" onclick="delRow(\'contracts\','+r.id+',\'docs\')">×</button></td></tr>'}).join('')+'</tbody></table>':'<div class="empty">Nenhum contrato.</div>';
+  document.getElementById('invoices-table').innerHTML=ii.length?'<table><thead><tr><th>Número</th><th>Emitente</th><th>Destinatário</th><th>Valor</th><th>Emissão</th><th></th></tr></thead><tbody>'+ii.map(function(r){return '<tr><td><strong>NF '+r.number+'/'+(r.series||'-')+'</strong></td><td style="color:var(--tm)">'+r.issuer+'</td><td style="color:var(--tm)">'+r.receiver+'</td><td style="font-family:Space Mono,monospace;font-size:12px">'+(r.total_value?'R$ '+fmt(r.total_value):'—')+'</td><td>'+fmtDate(r.issued_at)+'</td><td><button class="btn btn-sm btn-d" onclick="delRow(\'invoices\','+r.id+',\'docs\')">×</button></td></tr>'}).join('')+'</tbody></table>':'<div class="empty">Nenhuma NF.</div>';
+}
+
+// CREDENTIALS
+async function loadCredentials(){
+  var {data}=await sb.from('credentials').select('*').order('name');
+  var rows=data||[];
+  document.getElementById('credentials-table').innerHTML=rows.length?'<table><thead><tr><th>Nome</th><th>Usuário</th><th>Senha</th><th>URL</th><th>Tags</th><th></th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td><strong>'+r.name+'</strong></td><td style="font-family:Space Mono,monospace;font-size:12px">'+r.username+'</td><td><button class="btn btn-sm" onclick="this.textContent=this.textContent===\'Mostrar\'?\''+r.secret+'\':\'Mostrar\'">Mostrar</button></td><td>'+(r.url?'<a href="'+r.url+'" target="_blank" style="color:var(--ac);font-size:12px">Abrir</a>':'—')+'</td><td style="color:var(--tm);font-size:12px">'+r.tags+'</td><td><button class="btn btn-sm btn-d" onclick="delRow(\'credentials\','+r.id+',\'credentials\')">×</button></td></tr>'}).join('')+'</tbody></table>':'<div class="empty">Nenhuma credencial.</div>';
+}
+
+// NOTIFICATIONS
+async function loadNotifications(){
+  var {data}=await sb.from('notifications').select('*').order('is_done').order('due_date').limit(50);
+  var rows=data||[];
+  document.getElementById('notifications-table').innerHTML=rows.length?'<table><thead><tr><th>Título</th><th>Data</th><th>Severidade</th><th>Status</th><th></th></tr></thead><tbody>'+rows.map(function(r){return '<tr style="'+(r.is_done?'opacity:.4':'')+'"><td><strong>'+r.title+'</strong><div style="font-size:11px;color:var(--tm)">'+r.message+'</div></td><td>'+fmtDate(r.due_date)+'</td><td><span class="badge bg-'+(r.severity==='urgent'?'rd':r.severity==='warn'?'yl':'ac')+'">'+r.severity+'</span></td><td>'+(r.is_done?'<span class="badge bg-gn">Feito</span>':'<button class="btn btn-sm btn-g" onclick="doneNotif('+r.id+')">Concluir</button>')+'</td><td><button class="btn btn-sm btn-d" onclick="delRow(\'notifications\','+r.id+',\'notifications\')">×</button></td></tr>'}).join('')+'</tbody></table>':'<div class="empty">Nenhum lembrete.</div>';
+}
+async function doneNotif(id){await sb.from('notifications').update({is_done:true}).eq('id',id);toast('Concluído!');loadNotifications()}
+
+// GENERIC DELETE
+async function delRow(table,id,page){if(!confirm('Excluir este registro?'))return;await sb.from(table).delete().eq('id',id);toast('Excluído!');loadPage(page)}
+
+// SAVE FUNCTIONS
+async function saveTransaction(){
+  var m=document.getElementById('ft-month').value;
+  var obj={title:document.getElementById('ft-title').value,kind:document.getElementById('ft-kind').value,amount:parseFloat(document.getElementById('ft-amount').value)||0,reference_month:m?m+'-01':null,paid_at:document.getElementById('ft-paid').value||null,notes:document.getElementById('ft-notes').value};
+  var cat=document.getElementById('ft-cat').value;if(cat)obj.category_id=parseInt(cat);
+  await sb.from('finance_transactions').insert(obj);closeModals();toast('Lançamento salvo!');loadFinance();
+  document.getElementById('ft-title').value='';document.getElementById('ft-amount').value='';document.getElementById('ft-notes').value='';
+}
+async function saveCategory(){
+  await sb.from('finance_categories').insert({name:document.getElementById('fc-name').value});closeModals();toast('Categoria criada!');loadCategorySelect();document.getElementById('fc-name').value='';
+}
+async function saveEmployee(){
+  await sb.from('employees').insert({full_name:document.getElementById('fe-name').value,role:document.getElementById('fe-role').value,contract_type:document.getElementById('fe-contract').value,monthly_cost:parseFloat(document.getElementById('fe-cost').value)||0,start_date:document.getElementById('fe-start').value||null,status:document.getElementById('fe-status').value,notes:document.getElementById('fe-notes').value});
+  closeModals();toast('Funcionário cadastrado!');loadPeople();document.getElementById('fe-name').value='';document.getElementById('fe-role').value='';document.getElementById('fe-cost').value='';document.getElementById('fe-notes').value='';
+}
+async function saveChip(){
+  await sb.from('mobile_lines').insert({line_name:document.getElementById('fch-name').value,phone_number:document.getElementById('fch-number').value,carrier:document.getElementById('fch-carrier').value,iccid:document.getElementById('fch-iccid').value,plan:document.getElementById('fch-plan').value,recharge_every_days:parseInt(document.getElementById('fch-days').value)||30,last_recharge_date:document.getElementById('fch-last').value||null,notes:document.getElementById('fch-notes').value});
+  closeModals();toast('Chip cadastrado!');loadChips();document.getElementById('fch-name').value='';document.getElementById('fch-number').value='';
+}
+async function saveAsset(){
+  await sb.from('assets').insert({name:document.getElementById('fa-name').value,asset_type:document.getElementById('fa-type').value,brand_model:document.getElementById('fa-brand').value,serial_number:document.getElementById('fa-serial').value,notes:document.getElementById('fa-notes').value});
+  closeModals();toast('Ativo cadastrado!');loadAssets();document.getElementById('fa-name').value='';document.getElementById('fa-brand').value='';document.getElementById('fa-serial').value='';
+}
+async function saveStock(){
+  await sb.from('stock_items').insert({name:document.getElementById('fs-name').value,unit:document.getElementById('fs-unit').value,current_qty:parseInt(document.getElementById('fs-qty').value)||0,min_qty:parseInt(document.getElementById('fs-min').value)||0});
+  closeModals();toast('Item cadastrado!');loadInventory();document.getElementById('fs-name').value='';
+}
+async function saveContract(){
+  await sb.from('contracts').insert({title:document.getElementById('fco-title').value,counterparty:document.getElementById('fco-party').value,signed_at:document.getElementById('fco-signed').value||null,value:parseFloat(document.getElementById('fco-value').value)||null,starts_at:document.getElementById('fco-start').value||null,ends_at:document.getElementById('fco-end').value||null,notes:document.getElementById('fco-notes').value});
+  closeModals();toast('Contrato salvo!');loadDocs();document.getElementById('fco-title').value='';document.getElementById('fco-party').value='';
+}
+async function saveInvoice(){
+  await sb.from('invoices').insert({number:document.getElementById('fi-num').value,series:document.getElementById('fi-series').value,issuer:document.getElementById('fi-issuer').value,receiver:document.getElementById('fi-receiver').value,issued_at:document.getElementById('fi-date').value||null,total_value:parseFloat(document.getElementById('fi-value').value)||null,notes:document.getElementById('fi-notes').value});
+  closeModals();toast('NF salva!');loadDocs();document.getElementById('fi-num').value='';
+}
+async function saveCredential(){
+  await sb.from('credentials').insert({name:document.getElementById('fcr-name').value,username:document.getElementById('fcr-user').value,secret:document.getElementById('fcr-secret').value,url:document.getElementById('fcr-url').value,tags:document.getElementById('fcr-tags').value,notes:document.getElementById('fcr-notes').value});
+  closeModals();toast('Credencial salva!');loadCredentials();document.getElementById('fcr-name').value='';document.getElementById('fcr-user').value='';document.getElementById('fcr-secret').value='';
+}
+async function saveNotification(){
+  await sb.from('notifications').insert({title:document.getElementById('fn-title').value,due_date:document.getElementById('fn-date').value,severity:document.getElementById('fn-sev').value,message:document.getElementById('fn-msg').value});
+  closeModals();toast('Lembrete criado!');loadNotifications();document.getElementById('fn-title').value='';document.getElementById('fn-msg').value='';
+}
+
+// INIT
+loadDashboard();
+</script>
+</body>
+</html>
